@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+    
+    <h1>Displaying results for: <span th:text="${searchString}"></span></h1>
+    <p><a href="/">Back to Search</a></p>
+    <table style="text-align: center" class="table">
+        <thead>
+            <th>Board Game Name</th>
+            <th>Number Of Reviews</th>
+            <th>Average Rating</th>
+        </thead>
+        <tbody>
+            <tr th:each="game : ${gameList}">
+                <td th:text="${game.name}"></td>
+                <td th:text="${game.numOfReviews}"></td>
+                <td th:text="${game.avgRating}"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+</body>
+</html>

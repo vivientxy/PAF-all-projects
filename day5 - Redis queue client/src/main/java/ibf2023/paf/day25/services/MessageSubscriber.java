@@ -26,7 +26,7 @@ public class MessageSubscriber implements MessageListener {
 
         // only process if id = your id
         if (Constant.MY_ID.equals(id)) {
-            // MessageObject message = new MessageObject(id, jsonObject.getString("message"));
+            MessageObject message = new MessageObject(id, jsonObject.getString("message"));
             System.out.println(">>> subscribed: " + jsonObject.toString());
         }
         // else, ignore msg

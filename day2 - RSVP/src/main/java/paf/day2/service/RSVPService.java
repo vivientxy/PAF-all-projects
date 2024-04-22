@@ -28,11 +28,11 @@ public class RSVPService {
 
     public Boolean updateRSVP(RSVP rsvp) {
         boolean isRSVPExist = false;
-        if (condition) {
-            
+        if (!isRSVPExist) {
+            repo.updateRSVP(rsvp);
+            return true;
         }
-
-        return repo.updateRSVP(rsvp);
+        return false;
     }
 
 }

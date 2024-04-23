@@ -1,0 +1,8 @@
+ 
+ { "_id": 1, "name": "Tan Ah Khoon", "age": 20, "gender": "M", "hobbies": [ "food", "electronics"] } 
+ { "_id": 2, "name": "Tan Chee Kiong", "age": 32, "gender": "M", "hobbies": [ "cycling", "swimming", "soccer"] } 
+ { "_id": 3, "name": "Darryl Ng", "age": 48, "gender": "M", "hobbies": [ "shopping", "sleeping"] } 
+ { "_id": 4, "name": "Matheleu", "age": 7, "gender": "M", "hobbies": [ "reading", "electronics"] } 
+ { "_id": 5, "name": "Nicole", "age": 18, "gender": "F", "hobbies": [ "music", "reading"] } 
+ { "_id": 6, "name": "Germis", "age":  60, "gender": "F", "hobbies": [ "music", "reading"]} 
+ 

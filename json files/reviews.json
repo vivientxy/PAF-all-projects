@@ -1,0 +1,54 @@
+[{
+"_id": 1,
+"user": "Fred",
+"review": "This is test review from Fred",
+"movie_id": 1
+},
+{
+"_id": 2,
+"user": "Barney",
+"review": "This is test review from Barney",
+"movie_id": 1
+},
+{
+"_id": 3,
+"user": "Derrick",
+"review": "This is test review from Derrick",
+"movie_id": 1
+},
+{
+"_id": 4,
+"user": "Annie",
+"review": "This is test review from Annie",
+"movie_id": 1
+},
+{
+"_id": 5,
+"user": "Fred",
+"review": "This is test review from Fred",
+"movie_id": 2
+},
+{
+"_id": 6,
+"user": "Barney",
+"review": "This is test review from Barney",
+"movie_id": 2
+},
+{
+"_id": 7,
+"user": "Derrick",
+"review": "This is test review from Derrick",
+"movie_id": 3
+},
+{
+"_id": 8,
+"user": "Annie",
+"review": "This is test review from Annie",
+"movie_id": 4
+},
+{
+"_id": 9,
+"user": "Annie",
+"review": "This is test review from Annie",
+"movie_id": 5
+}]

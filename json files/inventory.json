@@ -1,0 +1,29 @@
+[{ 
+    "item": "journal", 
+    "instock": [
+        { "warehouse": "Ang Mo Kio", "qty": 5 },
+        { "warehouse": "Clementi", "qty": 15 } ]
+},
+{ 
+    "item": "notebook", 
+    "instock": [
+        { "warehouse": "Clementi", "qty": 5 } ]
+},
+{ 
+    "item": "paper", 
+    "instock": [
+        { "warehouse": "Ang Mo Kio", "qty": 60 },
+        { "warehouse": "Bedok", "qty": 15 } ]
+},
+{ 
+    "item": "planner", 
+    "instock": [
+        { "warehouse": "Ang Mo Kio", "qty": 40 },
+        { "warehouse": "Bedok", "qty": 5 } ]
+},
+{ 
+    "item": "postcard", 
+    "instock": [
+        { "warehouse": "Bedok", "qty": 15 },
+        { "warehouse": "Clementi", "qty": 35 } ]
+}]

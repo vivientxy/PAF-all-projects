@@ -1,0 +1,11 @@
+// embedding a reference document
+db.games.aggregate([
+    {$match:{name:"Catan"}},
+    {$lookup:{
+        from:"comments",
+        foreignField:"gid",
+        localField:"gid",
+        as:"reviews"
+    }},
+    {$unwind:"$reviews"}
+])

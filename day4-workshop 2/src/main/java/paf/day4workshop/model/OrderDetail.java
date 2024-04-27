@@ -14,5 +14,6 @@ public class OrderDetail {
     private Float unitPrice;
     private Float discount;
     private Integer quantity;
+    private Integer orderId;
 
 }

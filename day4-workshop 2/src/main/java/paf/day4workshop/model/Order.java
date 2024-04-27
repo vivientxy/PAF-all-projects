@@ -5,10 +5,8 @@ import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class Order {
 
@@ -19,5 +17,9 @@ public class Order {
     private String notes;
     private Float tax;
     private List<OrderDetail> orderDetails;
+
+    public Order() {
+        this.orderDate = new Date();
+    }
     
 }

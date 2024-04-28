@@ -25,6 +25,7 @@ public class Review extends EditedComment {
     private String user;
     private List<EditedComment> edited;
 
+    // chuk revision:
     public JsonObject toJson() {
         JsonArrayBuilder arrBuilder = Json.createArrayBuilder();
         List<JsonObjectBuilder> editedComments = this.getEdited().stream()

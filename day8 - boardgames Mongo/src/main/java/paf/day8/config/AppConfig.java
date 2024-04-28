@@ -17,7 +17,7 @@ public class AppConfig {
     @Bean
     public MongoTemplate createMongoTemplate() {
         MongoClient client = MongoClients.create(mongoUrl);
-        return new MongoTemplate(client, "mydatabase");
+        return new MongoTemplate(client, "boardgames");
     }
 
     @Bean
@@ -25,7 +25,6 @@ public class AppConfig {
         CommonsRequestLoggingFilter logger = new CommonsRequestLoggingFilter();
         logger.setIncludeClientInfo(true);
         logger.setIncludeQueryString(true);
-        
         return logger;
     }
 }

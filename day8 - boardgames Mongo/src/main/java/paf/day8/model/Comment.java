@@ -6,16 +6,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Document(collection = "games")
+@Document(collection = "comments")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Game {
+public class Comment {
+    private String cId;
+    private String user;
+    private Integer rating;
+    private String cText;
     private Integer gid;
-    private String name;
-    private Integer year;
-    private Integer ranking;
-    private Integer users_rated;
-    private String url;
-    private String image;
 }

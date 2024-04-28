@@ -4,12 +4,10 @@ import java.util.List;
 
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationOperationContext;
-import org.springframework.data.mongodb.core.aggregation.AggregationPipeline;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
@@ -30,15 +28,63 @@ public class GameRepo {
     @Autowired
     private MongoTemplate template;
 
-    public List<Game> getAllGames() {
-        return template.findAll(Game.class, "games");
-    }
-
-    public List<Game> getPaginatedGameList(int limit, int pageNum) {
-        Query query = new Query()
-                .skip(limit * pageNum)
+    // day 26 task (a)
+    /*
+        db.games.find({
+            name: {$regex:"name",$options:"i"}
+        })
+        .skip(0)
+        .limit(10);
+     */
+    public List<Game> getGamesByName(String name, int limit, int offset) {
+        Query query = Query.query(Criteria.where("name").regex(name, "i"))
+                .skip(offset)
                 .limit(limit);
         return template.find(query, Game.class, "games");
+    }
+
+    // day 26 task (a) and (b)
+    /*
+        db.games.count({
+            name: {$regex:"name",$options:"i"}
+        })
+     */
+    public long getGamesCountByName(String name) {
+        Query query = Query.query(Criteria.where("name").regex(name, "i"));
+        return template.count(query, Game.class, "games");
+    }
+
+    // day 26 task (b)
+    /*
+        db.games.find({
+            name: {$regex:"name",$options:"i"}
+        })
+        .sort({ranking:1})
+        .skip(0)
+        .limit(10);
+     */
+    public List<Game> getGamesByNameAndRank(String name, int limit, int offset) {
+        Query query = Query.query(Criteria.where("name").regex(name, "i"))
+                .with(Sort.by(Direction.ASC,"ranking"))
+                .skip(offset)
+                .limit(limit);
+        return template.find(query, Game.class, "games");
+    }
+
+    // day 26 task (c)
+    /*
+        db.games.find({
+            _id: ObjectId("65b32e122da1824ea35a3b77")
+        })
+     */
+    public Game getGameById(Integer game_id) {
+        Query query = Query.query(Criteria.where("gid").is(game_id));
+        return template.findOne(query, Game.class, "games");
+    }
+
+    // CRUD
+    public List<Game> getAllGames() {
+        return template.findAll(Game.class, "games");
     }
 
     public Game createGame(Game g) {
@@ -50,7 +96,7 @@ public class GameRepo {
         Update updateOps = new Update()
                 .set("name", g.getName())
                 .set("ranking", g.getRanking())
-                .set("usersRated", g.getUsersRated())
+                .set("usersRated", g.getUsers_rated())
                 .set("year", g.getYear());
         UpdateResult updateResult = template.updateMulti(query, updateOps, Game.class, "games");
         return updateResult.getModifiedCount();
@@ -62,11 +108,12 @@ public class GameRepo {
         return deleteResult.getDeletedCount();
     }
 
-    public List<Game> getGamesByName(String name, int limit, int offset) {
-        Query query = Query.query(Criteria.where("name").regex(name, "i"))
-                .skip(offset)
+    // chuk revision:
+    public List<Game> getPaginatedGameList(int limit, int pageNum) {
+        Query query = new Query()
+                .skip(limit * pageNum)
                 .limit(limit);
-        return template.find(query, Game.class);
+        return template.find(query, Game.class, "games");
     }
 
     /* aggregation -- embed referenced document

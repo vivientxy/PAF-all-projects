@@ -9,25 +9,25 @@
     <h1>Post a Review</h1>
 
     <form action="/review" method="post">
-        <table>
+        <table th:object="${comment}">
             <tr>
                 <td>Name:</td>
-                <td><input type="text" name="user"></td>
+                <td><input type="text" name="user" th:field="user"></td>
             </tr>
             <tr>
             <tr>
                 <td>Rating:</td>
-                <td><input type="number" name="rating"></td>
+                <td><input type="number" name="rating" th:field="rating" min="0" max="10"></td>
             </tr>
             <tr>
             <tr>
                 <td>Comment:</td>
-                <td><input type="text" name="cText"></td>
+                <td><textarea name="c_text" cols="30" rows="10" th:field="c_text"></textarea></td>
             </tr>
             <tr>
             <tr>
                 <td>Game ID:</td>
-                <td><input type="text" name="gid"></td>
+                <td><input type="number" name="gid" th:field="gid"></td>
             </tr>
         </table>
         <button type="submit">Submit Review</button>

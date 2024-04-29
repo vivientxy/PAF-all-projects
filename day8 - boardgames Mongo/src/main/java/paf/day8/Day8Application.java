@@ -23,7 +23,7 @@ public class Day8Application implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		// System.out.println(">>>>>> " + svc.isGameIdExist(150));
+		System.out.println(">>>>>> " + repo.getComment("79c329b6"));
 	}
 
 }

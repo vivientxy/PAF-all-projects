@@ -1,5 +1,6 @@
 package paf.day8.repo;
 
+import java.util.Date;
 import java.util.List;
 
 import org.bson.Document;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Repository;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 
+import paf.day8.model.Comment;
 import paf.day8.model.Game;
 
 @Repository
@@ -81,6 +83,37 @@ public class GameRepo {
         Query query = Query.query(Criteria.where("gid").is(game_id));
         return template.findOne(query, Game.class, "games");
     }
+
+    // day 27 task (a)
+    public Comment saveComment(Comment comment) {
+        return template.save(comment, "comments");
+    }
+
+    // day 27 task (b)
+    /*
+        db.comments.updateOne(
+            {c_id: "091910bb")},
+            {$push: {edited: {rating: 7, c_text: "hello this is updated", posted: new Date}}}
+        )
+     */
+    public long updateComment(String c_id, Integer rating, String comment) {
+        Query query = Query.query(Criteria.where("c_id").is(c_id));
+        Update updateOps = new Update()
+                .addToSet("edited", 
+                    new Document("rating", rating)
+                    .append("c_text", comment)
+                    .append("posted", new Date()));
+        UpdateResult updateResult = template.updateFirst(query, updateOps, Comment.class, "comments");
+        return updateResult.getModifiedCount();
+    }
+
+    // day 27 task (c)
+    public Comment getComment(String c_id) {
+        Query query = Query.query(Criteria.where("c_id").is(c_id));
+        return template.findOne(query, Comment.class, "comments");
+    }
+
+
 
     // CRUD
     public List<Game> getAllGames() {

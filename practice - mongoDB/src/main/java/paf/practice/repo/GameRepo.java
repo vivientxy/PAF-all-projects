@@ -92,6 +92,14 @@ public class GameRepo {
         return template.count(query, Game.class);
     }
 
+    // chuk revision:
+    public List<Game> getPaginatedGameList(int limit, int pageNum) {
+        Query query = new Query()
+                .skip(limit * pageNum)
+                .limit(limit);
+        return template.find(query, Game.class, "games");
+    }
+
     // Mongo Aggregation
     public List<Document> aggregateGamesByYear(int year) {
         MatchOperation matchRated= Aggregation.match(Criteria.where("year").is(year));
@@ -239,5 +247,49 @@ public class GameRepo {
         return docList;
     }
 
+    /* aggregation -- embed referenced document
+    
+        db.games.aggregate([
+            {$match: {
+                name: {$regex: "ticket", $options: "i"}
+            }},
+            {$sort: {ranking:-1}},
+            {$project:{_id:"$gid",name:1,year:1,ranking:1,users_rated:1,url:1,image:1}},
+            {$lookup:{
+                from:"comments",
+                foreignField:"gid",
+                localField:"_id",
+                as:"comments",
+                pipeline:[
+                    {$sort:{rating:-1}},
+                    {$limit:5}
+                ]
+            }}
+        ])
+     */
+    public List<Document> getGamesWithComments(String name) {
+        MatchOperation match = Aggregation.match(
+            Criteria.where("name").regex(name, "i")
+        );
+
+        SortOperation sort = Aggregation.sort(Direction.DESC,"ranking");
+
+        ProjectionOperation project = Aggregation.project()
+            .and("gid").as("_id")
+            .andInclude("name","year","ranking","users_rated","url","image");
+
+        LookupOperation lookup = Aggregation.lookup()
+                .from("comments")
+                .localField("_id")
+                .foreignField("gid")
+                .pipeline(
+                    Aggregation.sort(Direction.DESC, "rating"),
+                    Aggregation.limit(5)
+                )
+                .as("comments");
+           
+        Aggregation pipeline = Aggregation.newAggregation(match,sort,project,lookup);
+        return template.aggregate(pipeline, "games", Document.class).getMappedResults();
+    }
 
 }

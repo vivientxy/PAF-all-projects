@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +35,24 @@ public class GameService {
         return getJson(gameList, name, limit, offset);
     }
 
+    // repeatable code: Day 26 task (a) and (b)
+    private JsonObject getJson(List<Game> games, String name, int limit, int offset) {
+        JsonArrayBuilder gamesArrBuilder = Json.createArrayBuilder();
+        for (Game game : games) {
+            JsonObjectBuilder objBuilder = Json.createObjectBuilder()
+                    .add("game_id", game.getGid())
+                    .add("name", game.getName());
+            gamesArrBuilder.add(objBuilder);
+        }
+        return Json.createObjectBuilder()
+                .add("games", gamesArrBuilder)
+                .add("offset", offset)
+                .add("limit", limit)
+                .add("total", repo.getGamesCountByName(name))
+                .add("timestamp", new Date().toString())
+                .build();
+    }
+    
     // Day 26 task (c)
     public Boolean isGameIdExist(Integer game_id) {
         return null != repo.getGameById(game_id);
@@ -140,21 +159,50 @@ public class GameService {
             .add("timestamp", new Date().toString());
     }
 
+    // Day 28 task (a)
+    public JsonObject getGameReviews(Integer gid) {
+        Game game = repo.getGameById(gid);
+        if (null == game)
+            return null;
 
-    // repeatable code: Day 26 task (a) and (b)
-    private JsonObject getJson(List<Game> games, String name, int limit, int offset) {
-        JsonArrayBuilder gamesArrBuilder = Json.createArrayBuilder();
-        for (Game game : games) {
+        List<Comment> comments = repo.getGameReviews(gid);
+        JsonArrayBuilder arrBuilder = Json.createArrayBuilder();
+        for (Comment comment : comments) {
+            StringBuilder strBuilder = new StringBuilder("/review/")
+                    .append(comment.getC_id());
+            arrBuilder.add(strBuilder.toString());
+        }
+        
+        return Json.createObjectBuilder()
+            .add("game_id", gid)
+            .add("name", game.getName())
+            .add("year", game.getYear())
+            .add("rank", game.getRanking())
+            .add("users_rated", game.getUsers_rated())
+            .add("url", game.getUrl())
+            .add("thumbnail", game.getImage())
+            .add("reviews", arrBuilder)
+            .add("timestamp", new Date().toString())
+            .build();
+    }
+
+    // Day 28 task (b)
+    public JsonObject getGameReviews(String highestOrLowest) {
+        List<Document> docs = repo.getGameReviews(highestOrLowest);
+        JsonArrayBuilder arrBuilder = Json.createArrayBuilder();
+        for (Document doc : docs) {
             JsonObjectBuilder objBuilder = Json.createObjectBuilder()
-                    .add("game_id", game.getGid())
-                    .add("name", game.getName());
-            gamesArrBuilder.add(objBuilder);
+                .add("_id", doc.get("_id").toString())
+                .add("name", doc.get("name").toString())
+                .add("rating", doc.get("rating").toString())
+                .add("user", doc.get("user").toString())
+                .add("comment", doc.get("comment").toString())
+                .add("review_id", doc.get("review_id").toString());
+            arrBuilder.add(objBuilder);
         }
         return Json.createObjectBuilder()
-                .add("games", gamesArrBuilder)
-                .add("offset", offset)
-                .add("limit", limit)
-                .add("total", repo.getGamesCountByName(name))
+                .add("rating", highestOrLowest)
+                .add("games", arrBuilder)
                 .add("timestamp", new Date().toString())
                 .build();
     }

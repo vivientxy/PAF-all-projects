@@ -9,10 +9,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.LimitOperation;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
-import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
-import org.springframework.data.mongodb.core.aggregation.SortOperation;
+import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -113,8 +114,73 @@ public class GameRepo {
         return template.findOne(query, Comment.class, "comments");
     }
 
+    // day 28 task (a)
+    /*
+        db.comments.find({
+            gid: 150
+        })
+     */
+    public List<Comment> getGameReviews(Integer gid) {
+        Query query = Query.query(Criteria.where("gid").is(gid));
+        return template.find(query, Comment.class, "comments");
+    }
 
+    // day 28 task (b)
+    /*
+        db.games.aggregate([
+            {$lookup:{
+                from: "comments",
+                foreignField:"gid",
+                localField:"gid",
+                pipeline: [
+                    {$sort: {rating: -1}},
+                    {$limit:1}
+                ],
+                as:"reviews"
+            }},
+            {$unwind:"$reviews"},
+            {$project: {
+                gid: 1, 
+                name: 1,
+                rating: "$reviews.rating",
+                user: "$reviews.user",
+                comment: "$reviews.c_text",
+                review_id: "$reviews.c_id"
+            }}
+        ])
+     */
+    public List<Document> getGameReviews(String highestOrLowest) {
+        Direction direction = Direction.DESC;
+        if ("lowest".equalsIgnoreCase(highestOrLowest))
+            direction = Direction.ASC;
+        LookupOperation lookup = Aggregation.lookup()
+                .from("comments")
+                .localField("gid")
+                .foreignField("gid")
+                .pipeline(
+                    Aggregation.sort(Sort.by(direction, "rating")), 
+                    Aggregation.limit(1))
+                .as("reviews");
+        UnwindOperation unwind = Aggregation.unwind("reviews");
+        ProjectionOperation project = Aggregation.project("gid","name")
+            .andExclude("_id")
+            .and("gid").as("_id")
+            .and("name").as("name")
+            .and("reviews.rating").as("rating")
+            .and("reviews.user").as("user")
+            .and("reviews.c_text").as("comment")
+            .and("reviews.c_id").as("review_id");
 
+        // limit to 50 if not takes too long
+        LimitOperation limit = Aggregation.limit(50);
+
+        Aggregation pipeline= Aggregation.newAggregation(limit,lookup,unwind,project);
+        AggregationResults<Document> results= template.aggregate(pipeline, "games", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
+
+    /* ======================================================================================== */
     // CRUD
     public List<Game> getAllGames() {
         return template.findAll(Game.class, "games");
@@ -139,59 +205,6 @@ public class GameRepo {
         Query query = Query.query(Criteria.where("_id").is(id));
         DeleteResult deleteResult = template.remove(query, "games");
         return deleteResult.getDeletedCount();
-    }
-
-    // chuk revision:
-    public List<Game> getPaginatedGameList(int limit, int pageNum) {
-        Query query = new Query()
-                .skip(limit * pageNum)
-                .limit(limit);
-        return template.find(query, Game.class, "games");
-    }
-
-    /* aggregation -- embed referenced document
-    
-        db.games.aggregate([
-            {$match: {
-                name: {$regex: "ticket", $options: "i"}
-            }},
-            {$sort: {ranking:-1}},
-            {$project:{_id:"$gid",name:1,year:1,ranking:1,users_rated:1,url:1,image:1}},
-            {$lookup:{
-                from:"comments",
-                foreignField:"gid",
-                localField:"_id",
-                as:"comments",
-                pipeline:[
-                    {$sort:{rating:-1}},
-                    {$limit:5}
-                ]
-            }}
-        ])
-     */
-    public List<Document> getGamesWithComments(String name) {
-        MatchOperation match = Aggregation.match(
-            Criteria.where("name").regex(name, "i")
-        );
-
-        SortOperation sort = Aggregation.sort(Direction.DESC,"ranking");
-
-        ProjectionOperation project = Aggregation.project()
-            .and("gid").as("_id")
-            .andInclude("name","year","ranking","users_rated","url","image");
-
-        LookupOperation lookup = Aggregation.lookup()
-                .from("comments")
-                .localField("_id")
-                .foreignField("gid")
-                .pipeline(
-                    Aggregation.sort(Direction.DESC, "rating"),
-                    Aggregation.limit(5)
-                )
-                .as("comments");
-           
-        Aggregation pipeline = Aggregation.newAggregation(match,sort,project,lookup);
-        return template.aggregate(pipeline, "games", Document.class).getMappedResults();
     }
     
 }

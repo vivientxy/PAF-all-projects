@@ -90,4 +90,27 @@ public class GameRestController {
             return new ResponseEntity<String>("Review ID does not exist", HttpStatusCode.valueOf(404));
         return new ResponseEntity<String>(json.toString(), HttpStatus.OK);
     }
+
+    // Day 28 task (a)
+    @GetMapping("/game/{game_id}/reviews")
+    public ResponseEntity<String> getGameReviews(@PathVariable Integer game_id) {
+        JsonObject json = svc.getGameReviews(game_id);
+        if (null == json)
+            return new ResponseEntity<String>("Game ID does not exist", HttpStatusCode.valueOf(404));
+        return new ResponseEntity<String>(json.toString(), HttpStatus.OK);
+    }
+
+    // Day 28 task (b)
+    @GetMapping("/games/highest")
+    public ResponseEntity<String> getAllGameHighestReviews() {
+        JsonObject json = svc.getGameReviews("highest");
+        return new ResponseEntity<String>(json.toString(), HttpStatus.OK);
+    }
+
+    // Day 28 task (b)
+    @GetMapping("/games/lowest")
+    public ResponseEntity<String> getAllGameLowestReviews() {
+        JsonObject json = svc.getGameReviews("lowest");
+        return new ResponseEntity<String>(json.toString(), HttpStatus.OK);
+    }
 }

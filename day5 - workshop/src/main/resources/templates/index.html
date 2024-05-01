@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+    
+    <h1>Order Form</h1>
+
+    <form action="/order" method="post">
+        <table th:object="${order}" class="table table-borderless">
+            <tr>
+                <td>Name:</td>
+                <td>
+                    <!-- <input type="text" name="customerName" th:field="*{customerName}"> -->
+                    <select name="customerName" th:field="*{customerName}">
+                        <option th:each="name : ${appNames}" th:value="${name}"></option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Address:</td>
+                <td><input type="text" name="shipAddress" th:field="*{shipAddress}"></td>
+            </tr>
+            <tr>
+                <td>Notes:</td>
+                <td><textarea name="notes" th:field="*{notes}" cols="22" rows="5"></textarea></td>
+            </tr>
+            <tr>
+                <td>Tax:</td>
+                <td><input type="number" name="tax" step=".01" th:field="*{tax}"></td>
+            </tr>
+        </table>
+
+        <button type="button" class="btn btn-primary" onclick="addItem()">Add Item</button>
+        <button type="submit" class="btn btn-primary">Submit Order</button>
+
+        <div id="orderDetailsContainer" class="container-fluid"></div>
+
+    </form>
+
+
+    <script>
+        function addItem() {
+            var container = document.getElementById('orderDetailsContainer');
+            var newOrderDetail = document.createElement('div');
+            newOrderDetail.classList.add('orderDetail');
+            newOrderDetail.innerHTML = `
+                <tr>
+                    <td>Product:</td>
+                    <td><input type="text" name="product"></td>
+                    <td>Unit Price:</td>
+                    <td><input type="number" step=".01" name="unitPrice"></td>
+                    <td>Discount:</td>
+                    <td><input type="number" step=".01" name="discount"></td>
+                    <td>Quantity:</td>
+                    <td><input type="number" name="quantity"></td>
+                </tr>
+                `;
+            container.appendChild(newOrderDetail);
+        }
+    </script>
+
+</body>
+</html>

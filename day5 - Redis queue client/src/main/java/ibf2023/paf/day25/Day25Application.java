@@ -49,7 +49,7 @@ public class Day25Application implements CommandLineRunner {
 		}
 		scanner.close();
 
-		publisher.start(); // read incoming msg, transform and publish the msg (single threadpool)
-		reader.start(); // to read incoming messages (2 workers in threadpool)
+		// publisher.start(); // read incoming msg, transform and publish the msg (single threadpool)
+		// reader.start(); // to read incoming messages (2 workers in threadpool)
 	}
 }

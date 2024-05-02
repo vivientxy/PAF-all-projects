@@ -134,11 +134,9 @@ db.inventory.update(
 
 // day 27 - slide 31. clean up data
 db.inventory.updateMany(
-    {"instock.warehouse" : "Ang Mo Kio"},
-    {$set: { "instock.$[elem].qty": 0 }},
-    {arrayFilters: [
-        {"elem.qty": {$lt:0}}
-    ]}
+   { "instock": { $elemMatch: { "warehouse": "Ang Mo Kio", "qty": { $lt: 0 } } } },
+   { $set: { "instock.$[elem].qty" : 0 } },
+   { arrayFilters: [ { "elem.warehouse" : "Ang Mo Kio", "elem.qty" : { $lt: 0 } } ] }
 )
 
 // ============ AGGREGATION ============
@@ -202,16 +200,16 @@ db.movies.aggregate([
     {$unwind:"$Genre"},
     {$bucket: {
         groupBy: "$Genre",
-        boundaries: ["Adventure","Biography","Comedy","Drama","Fantasy","Horror","Sci-Fi"],
+        boundaries: ["Action","Adventure","Biography","Comedy","Drama","Fantasy","Horror","Sci-Fi"],
         default: "ZZZ",
         output: {
-            count: {$sum:1},
-            titles: {$push:{$concat:["$Title"," (","$Rated",")"]}}
+            titles: {$sum:1}
+//            titles: {$push:{$concat:["$Title"," (","$Rated",")"]}}
         }
     }},
     {$unwind:"$titles"},
-    {$sort:{titles:-1}}
-//    ,{$out:{db:"test",coll:"moviesTest"}}
+    {$sort:{titles:-1}},
+    {$out:{db:"test",coll:"moviesTest"}}
 ])
 
 // embedding a reference document

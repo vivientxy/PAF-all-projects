@@ -1,5 +1,6 @@
 package paf.day8.repo;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,13 +9,20 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.mongodb.MongoExpression;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.aggregation.GroupOperation;
+import org.springframework.data.mongodb.core.aggregation.*;
+import org.springframework.data.mongodb.core.index.Index;
+import org.springframework.data.mongodb.core.index.TextIndexDefinition;
+import org.springframework.data.mongodb.core.index.TextIndexDefinition.TextIndexDefinitionBuilder;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.TextCriteria;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.Update.Position;
 import org.springframework.stereotype.Repository;
+
+import paf.day8.model.Game;
 
 @Repository
 public class RevisionRepo {
@@ -144,7 +152,17 @@ public class RevisionRepo {
     //     gender: "F",
     //     hobbies: [ "sleeping","eating","coding" ]
     // });
-    
+    public void insertPersonA(Object person) {
+        template.insert(person);
+    }
+
+    public Document insertPersonB(Object person) {
+        Document document = new Document("name", "Mary")
+                .append("age", 25)
+                .append("gender", "F")
+                .append("hobbies", Arrays.asList("sleeping", "eating", "coding"));
+        return template.insert(document, "persons");
+    }
 
     // // update
     // db.persons.updateOne(
@@ -154,23 +172,50 @@ public class RevisionRepo {
     //         $inc: { age : 2 } // increment by 2
     //     }
     // );
+    public long updatePerson() {
+        Query query = new Query(Criteria.where("gender").is("F"));
+        Update update = new Update()
+                .set("name", "Emily2")
+                .inc("age", 2);
+        return template.updateFirst(query, update, "persons").getModifiedCount();
+    }
 
     // // delete
     // db.persons.deleteOne({
     //     _id: ObjectId("66272616cb8054bb5fe125a9")
     // })
+    public long deletePersonById(ObjectId id) {
+        Query query = new Query(Criteria.where("_id").is(id));
+        return template.remove(query, "persons").getDeletedCount();
+    }
 
     // // create index
     // db.movies.createIndex({
     //     "$**" : "text"
     // });
+    public void createTextIndexAll() {
+        TextIndexDefinition textIndex = new TextIndexDefinitionBuilder()
+                .onAllFields()
+                .build();
+        template.indexOps("movies").ensureIndex(textIndex);
+    }
 
     // db.movies.createIndex({
     //     Title : "text"
     // });
+    public void createTextIndex() {
+        Index index = new Index()
+                .named("title_text_index")
+                .on("Title", Direction.DESC)
+                .unique().background().sparse();
+        template.indexOps("movies").ensureIndex(index);
+    }
 
     // // drop indexes
     // db.movies.dropIndexes();
+    public void dropAllIndexes() {
+        template.indexOps("movies").dropAllIndexes();
+    }
 
     // // search using index
     // db.movies.find({
@@ -179,19 +224,26 @@ public class RevisionRepo {
     //         $caseSensitive : false
     //     }
     // });
+    public Optional<List<Document>> findMoviesByTitle() {
+        TextCriteria criteria = TextCriteria.forDefaultLanguage()
+                .matching("aVatAr")
+                .caseSensitive(false);
+        return Optional.ofNullable(template.find(Query.query(criteria), Document.class));
+    }
 
-    // // search for embedded document
-    // db.inventory.find(
-    //     { "instock.warehouse" : "Bedok" }
-    // )
-
-    // // day 27 - slide 28 (condition applies to any document in the array)
+    // // search embedded document (condition applies to any document in the array)
     // db.inventory.find({
     //     $and : [
     //         { "instock.warehouse" : "Bedok" },
     //         { "instock.qty" : { $gte:15 } }
     //     ]
     // })
+    public Optional<List<Document>> findEmbeddedAttributes() {
+        Query query = new Query(Criteria
+                .where("instock.warehouse").is("Bedok")
+                .and("instock.qty").gte(15));
+        return Optional.ofNullable(template.find(query, Document.class));
+    }
 
     // // day 27 - slide 28 (element match)
     // db.inventory.find({
@@ -199,33 +251,69 @@ public class RevisionRepo {
     //         $elemMatch: {warehouse: "Bedok", qty: {$gte:15}}
     //     }
     // })
+    public Optional<List<Document>> findElemMatch() {
+        Query query = new Query(Criteria.where("instock")
+                .elemMatch(Criteria
+                    .where("warehouse").is("Bedok")
+                    .and("qty").gte(15)));
+        return Optional.ofNullable(template.find(query, Document.class));
+    }
 
     // // day 27 - slide 29. only first record is updated
     // db.inventory.update(
     //     {"instock.warehouse": "Ang Mo Kio"},
     //     {$inc: { "instock.$[].qty": 10 }}
     // );
+    public long updateInventoryQtyByWarehouse() {
+        Query query = new Query(Criteria.where("instock.warehouse").is("Ang Mo Kio"));
+        Update update = new Update().inc("instock.$[].qty", 10);
+        return template.updateMulti(query, update, Document.class).getModifiedCount();
+    }
 
     // // day 27 - slide 30. push (add on) new embedded document
     // db.inventory.update(
     //     {item:"postcard"},
     //     {$push: {instock: {warehouse: "Ubi", qty:100 }}}
     // )
+    public long updatePush() {
+        Query query = new Query(Criteria.where("item").is("postcard"));
+        Document instock = new Document()
+                .append("warehouse", "Ubi")
+                .append("qty", 100);
+        Update update = new Update().push("instock", instock);
+        return template.updateFirst(query, update, Document.class).getModifiedCount();
+    }
 
     // // day 27 - slide 30. pop (take out) embedded document
     // db.inventory.update(
     //     {item: "postcard"},
     //     {$pop: {instock: -1}} // remove first element in the array. 1 is remove from the back
     // )
+    public long updatePop() {
+        Query query = new Query(Criteria.where("item").is("postcard"));
+        Update update = new Update().pop("instock", Position.FIRST);
+        return template.updateFirst(query, update, Document.class).getModifiedCount();
+    }
 
     // // day 27 - slide 31. clean up data
     // db.inventory.updateMany(
-    //     {"instock.warehouse" : "Ang Mo Kio"},
-    //     {$set: { "instock.$[elem].qty": 0 }},
-    //     {arrayFilters: [
-    //         {"elem.qty": {$lt:0}}
-    //     ]}
-    // )
+    //     { "instock": { $elemMatch: { "warehouse": "Ang Mo Kio", "qty": { $lt: 0 } } } },
+    //     { $set: { "instock.$[elem].qty" : 0 } },
+    //     { arrayFilters: [ { "elem.warehouse" : "Ang Mo Kio", "elem.qty" : { $lt: 0 } } ] }
+    //  )
+    public long updateCleanUpData() {
+        Query query = new Query(Criteria
+                .where("instock")
+                .elemMatch(Criteria
+                    .where("warehouse").is("Ang Mo Kio")
+                    .and("qty").lt(0)));
+        Update update = new Update()
+                .set("instock.$[elem].qty", 0)
+                .filterArray(Criteria
+                    .where("elem.warehouse").is("Ang Mo Kio")
+                    .and("elem.qty").lt(0));
+        return template.updateMulti(query, update, Document.class).getModifiedCount();
+    }
 
     // // ============ AGGREGATION ============
 
@@ -234,12 +322,34 @@ public class RevisionRepo {
     //     {$match: {Rated:"PG"}},
     //     {$project: {_id:0, Title:1, Year:1, Rated:1, summary:"$Awards"}}
     // ])
+    public List<Document> aggregateMatchProject() {
+        MatchOperation match = Aggregation.match(Criteria.where("Rated").is("PG"));
+        ProjectionOperation project = Aggregation.project("Title","Year","Rated")
+                .andExclude("_id")
+                .and("Awards").as("summary");
+
+        Aggregation pipeline= Aggregation.newAggregation(match, project);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // group + sort:
     // db.movies.aggregate([
     //     {$group: {_id:"$Rated",count:{$sum:1},titles:{$push:"$Title"}}},
     //     {$sort: {count:-1}}
     // ])
+    public List<Document> aggregateGroupSort() {
+        GroupOperation group = Aggregation.group("Rated")
+                .count().as("count")
+                .push("Title").as("titles");
+        SortOperation sort = Aggregation.sort(Sort.by(Direction.ASC, "count"));
+
+        Aggregation pipeline= Aggregation.newAggregation(group, sort);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // projection + concatenation:
     // db.movies.aggregate([
@@ -252,13 +362,36 @@ public class RevisionRepo {
     //         }},
     //     {$sort:{title:1}}
     // ])
+    public List<Document> aggregateMovies() {
+        // method 1 - string concatenation
+        ProjectionOperation projectOperations1 = Aggregation.project("Released")
+                .andExclude("_id")
+                .and("plot").as("summary") // include column with alias
+                .and(
+                    StringOperators.Concat.valueOf("Title").concat(" (")
+                    .concatValueOf("Rated").concat(")")
+                ).as("title");
 
-    // // unwind arrays
-    // db.movies.aggregate([
-    //     {$unwind:"$Actors"}
-    // ])
+        // method 2 - AggregationExpression
+        ProjectionOperation projectOperations2 = Aggregation.project("Released")
+                .andExclude("_id")
+                .and("plot").as("summary") // include column with alias
+                .and(
+                    AggregationExpression.from(
+                        MongoExpression.create("""
+                            $concat: ["$Title"," (","$Rated",")"]
+                        """) // using Mongo Query Language in Java, with MongoExpression
+                    )
+                ).as("title");
 
-    // // unwind arrays + group
+        SortOperation sortOperation = Aggregation.sort(Sort.by(Direction.ASC, "title"));
+        Aggregation pipeline= Aggregation.newAggregation(projectOperations1, sortOperation);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
+
+    // // unwind arrays + group + sort
     // db.movies.aggregate([
     //     {$unwind:"$Actors"},
     //     {$group: {
@@ -268,37 +401,56 @@ public class RevisionRepo {
     //     }},
     //     {$sort:{"_id":1}}
     // ])
+    public List<Document> aggregateMoviesUnwindByActor() {
+        UnwindOperation unwind = Aggregation.unwind("Actors");
+        GroupOperation group = Aggregation.group("Actors")
+                .push("Title").as("titles")
+                .count().as("titles_count");
+        SortOperation sort = Aggregation.sort(Sort.by(Direction.DESC, "Actors"));
 
-    // // bucket classification
-    // db.games.aggregate([
-    //     {$bucket: {
-    //         groupBy: "$year",
-    //         boundaries: [1990,2000,2010,2020],
-    //         default: "Others",
-    //         output: {
-    //             count: {$sum:1},
-    //             titles: {$push:"$name"}
-    //         }
-    //     }},
-    //     {$unwind:"$titles"}
-    // ])
+        Aggregation pipeline= Aggregation.newAggregation(unwind, group, sort);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // bucket classification + unwind
     // db.movies.aggregate([
     //     {$unwind:"$Genre"},
     //     {$bucket: {
     //         groupBy: "$Genre",
-    //         boundaries: ["Adventure","Biography","Comedy","Drama","Fantasy","Horror","Sci-Fi"],
+    //         boundaries: ["Action","Adventure","Biography","Comedy","Drama","Fantasy","Horror","Sci-Fi"],
     //         default: "ZZZ",
     //         output: {
-    //             count: {$sum:1},
+    //             count: {$sum:1}
     //             titles: {$push:{$concat:["$Title"," (","$Rated",")"]}}
     //         }
     //     }},
     //     {$unwind:"$titles"},
-    //     {$sort:{titles:-1}}
-    // //    ,{$out:{db:"test",coll:"moviesTest"}}
+    //     {$sort:{titles:-1}},
+    //     {$out:{db:"test",coll:"moviesTest"}}
     // ])
+    public List<Document> aggregateGamesIntoYearBuckets() {
+        UnwindOperation unwind1 = Aggregation.unwind("Genre");
+        BucketOperation bucket = Aggregation.bucket("Genre")
+                .withBoundaries("Action","Adventure","Biography","Comedy","Drama","Fantasy","Horror","Sci-Fi")
+                .withDefaultBucket("ZZZ")
+                .andOutputCount().as("count")
+                .andOutput(StringOperators.Concat
+                        .valueOf("Title")
+                        .concat(" (")
+                        .concatValueOf("Rated")
+                        .concat(")"))
+                    .push().as("titles");
+        UnwindOperation unwind2 = Aggregation.unwind("titles");
+        SortOperation sort = Aggregation.sort(Sort.by(Direction.DESC,"titles"));
+        OutOperation out = Aggregation.out("moviesTest").in("test");
+
+        Aggregation pipeline= Aggregation.newAggregation(unwind1,bucket,unwind2,sort,out);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // embedding a reference document
     // db.games.aggregate([
@@ -311,6 +463,16 @@ public class RevisionRepo {
     //     }},
     //     {$unwind:"$reviews"}
     // ])
+    public List<Document> aggregateGamesWithComments(String gameName) {
+        MatchOperation match = Aggregation.match(Criteria.where("name").is(gameName));
+        LookupOperation lookup = Aggregation.lookup("comments", "gid", "gid", "reviews");
+        UnwindOperation unwind = Aggregation.unwind("reviews");
+
+        Aggregation pipeline= Aggregation.newAggregation(match,lookup,unwind);
+        AggregationResults<Document> results= template.aggregate(pipeline, "games", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // $lookup with pipeline
     // db.movies.aggregate([
@@ -329,6 +491,25 @@ public class RevisionRepo {
     //     {$project: {_id:1, Title:1,Year:1,Rated:1,Genre:1,Reviews:1}},
     //     {$sort: {Title:1}}
     // ]);
+    public List<Document> aggregateLookupPipeline() {
+        MatchOperation match = Aggregation.match(Criteria.where("Rated").is("PG"));
+        LookupOperation lookup = Aggregation.lookup()
+                .from("reviews")
+                .localField("_id")
+                .foreignField("movie_id")
+                .pipeline(
+                    Aggregation.sort(Sort.by(Direction.ASC, "user")),
+                    Aggregation.limit(2),
+                    Aggregation.project("user","review").andExclude("_id"))
+                .as("Reviews");
+        ProjectionOperation project = Aggregation.project("_id","Title","Year","Rated","Genre","Reviews");
+        SortOperation sort = Aggregation.sort(Direction.ASC, "Title");
+
+        Aggregation pipeline= Aggregation.newAggregation(match,lookup,project,sort);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // converting data type (from String to Int/Bool)
     // db.movies.aggregate([
@@ -337,6 +518,16 @@ public class RevisionRepo {
     //         Response:{$toBool:"$Response"}
     //     }}
     // ])
+    public List<Document> aggregateSet() {
+        ProjectionOperation project = Aggregation.project()
+                .andExpression("{$convert: {input: '$Year', to: 'int'}}").as("Year")
+                .andExpression("{$convert: {input: '$Response', to: 'bool'}}").as("Response");
+
+        Aggregation pipeline= Aggregation.newAggregation(project);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // converting data type (using $convert)
     // db.movies.aggregate([
@@ -347,6 +538,20 @@ public class RevisionRepo {
     //         onNull:""
     //     }}
     // ])
+    public List<Document> aggregateConvert() {
+        ProjectionOperation project = Aggregation.project()
+                        .and(ConvertOperators
+                            .valueOf("")
+                            .convertTo("")
+                            .onErrorReturn("")
+                            .onNullReturn(""))
+                        .as("");
+
+        Aggregation pipeline= Aggregation.newAggregation(project);
+        AggregationResults<Document> results= template.aggregate(pipeline, "movies", Document.class);
+        List<Document> docList = results.getMappedResults();
+        return docList;
+    }
 
     // // ============ REVISION ===============
 
@@ -389,5 +594,13 @@ public class RevisionRepo {
     // {},
     // {$unset: {reviews: 1}}
     // )
+
+    // paginated find list
+    public List<Game> getPaginatedGameList(int limit, int pageNum) {
+        Query query = new Query()
+                .skip(limit * pageNum)
+                .limit(limit);
+        return template.find(query, Game.class, "games");
+    }
 
 }
